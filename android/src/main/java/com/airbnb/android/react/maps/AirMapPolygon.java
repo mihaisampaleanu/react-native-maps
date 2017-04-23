@@ -18,6 +18,7 @@ public class AirMapPolygon extends AirMapFeature {
     private Polygon polygon;
 
     private List<LatLng> coordinates;
+    private List<? extends List<LatLng>> holesCoordinates;
     private int strokeColor;
     private int fillColor;
     private float strokeWidth;
@@ -38,6 +39,28 @@ public class AirMapPolygon extends AirMapFeature {
         }
         if (polygon != null) {
             polygon.setPoints(this.coordinates);
+        }
+    }
+
+    public void setHoles(ReadableArray holes) {
+        ArrayList<ArrayList<LatLng>> parentList = new ArrayList<ArrayList<LatLng>>();
+
+        for (int i = 0; i < holes.size(); i++) {
+            ReadableArray hole = holes.getArray(i);
+            ArrayList<LatLng> childList = new ArrayList<LatLng>();
+
+            for (int j = 0; j < hole.size(); j++) {
+                ReadableMap coordinate = hole.getMap(j);
+                childList.add(j, new LatLng(coordinate.getDouble("latitude"), coordinate.getDouble("longitude")));
+            }
+
+            parentList.add(new ArrayList<LatLng>(childList));
+        }
+
+        this.holesCoordinates = parentList;
+
+        if (polygon != null) {
+            polygon.setHoles(this.holesCoordinates);
         }
     }
 
@@ -91,6 +114,12 @@ public class AirMapPolygon extends AirMapFeature {
         options.strokeWidth(strokeWidth);
         options.geodesic(geodesic);
         options.zIndex(zIndex);
+
+        //add all polygon holes into polygon options
+        for (int i = 0; i < this.holesCoordinates.size(); i++) {
+            options.addHole(this.holesCoordinates.get(i));
+        }
+
         return options;
     }
 
